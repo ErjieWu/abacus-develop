@@ -130,7 +130,8 @@ class LCAO_Deepks
               const int ntype,
               const int nks,
               const Parallel_Orbitals& pv_in,
-              std::vector<int> na);
+              std::vector<int> na,
+              std::ofstream& ofs);
 
     /// Allocate memory for correction to Hamiltonian
     void allocate_V_delta(const int nat, const int nks = 1);
@@ -146,7 +147,12 @@ class LCAO_Deepks
     bool hr_cal = true;
 
     // arrange index of descriptor in all atoms
-    void init_index(const int ntype, const int nat, std::vector<int> na, const int tot_inl, const LCAO_Orbitals& orb);
+    void init_index(const int ntype,
+                    const int nat,
+                    std::vector<int> na,
+                    const int tot_inl,
+                    const LCAO_Orbitals& orb,
+                    std::ofstream& ofs);
 
     const Parallel_Orbitals* pv;
 };

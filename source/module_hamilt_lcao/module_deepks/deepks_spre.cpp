@@ -255,14 +255,15 @@ void DeePKS_domain::cal_gvepsl(const int nat,
                                const int* inl_l,
                                const std::vector<torch::Tensor>& gevdm,
                                const torch::Tensor& gdmepsl,
-                               torch::Tensor& gvepsl)
+                               torch::Tensor& gvepsl,
+                               const int rank)
 {
     ModuleBase::TITLE("DeePKS_domain", "cal_gvepsl");
     ModuleBase::timer::tick("DeePKS_domain", "cal_gvepsl");
     // dD/d\epsilon_{\alpha\beta}, tensor vector form of gdmepsl
     std::vector<torch::Tensor> gdmepsl_vector;
     auto accessor = gdmepsl.accessor<double, 4>();
-    if (GlobalV::MY_RANK == 0)
+    if (rank == 0)
     {
         // make gdmx as tensor
         int nlmax = inlmax / nat;
@@ -318,12 +319,12 @@ void DeePKS_domain::cal_gvepsl(const int nat,
     return;
 }
 
-void DeePKS_domain::check_gvepsl(const torch::Tensor& gvepsl)
+void DeePKS_domain::check_gvepsl(const torch::Tensor& gvepsl, const int rank)
 {
     std::stringstream ss;
     std::ofstream ofs;
 
-    if (GlobalV::MY_RANK != 0)
+    if (rank != 0)
     {
         return;
     }

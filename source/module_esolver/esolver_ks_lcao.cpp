@@ -215,7 +215,7 @@ void ESolver_KS_LCAO<TK, TR>::before_all_runners(UnitCell& ucell, const Input_pa
 
 #ifdef __DEEPKS
     // 10) initialize deepks
-    LCAO_domain::DeePKS_init(ucell, pv, this->kv.get_nks(), orb_, this->ld);
+    LCAO_domain::DeePKS_init(ucell, pv, this->kv.get_nks(), orb_, this->ld, GlobalV::ofs_running);
     if (PARAM.inp.deepks_scf)
     {
         // load the DeePKS model from deep neural network
@@ -249,8 +249,8 @@ void ESolver_KS_LCAO<TK, TR>::before_all_runners(UnitCell& ucell, const Input_pa
                          "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
                          "%%%%%%%%%%%%%%%%%%%%%%%%%%"
                       << std::endl;
-            std::cout << " Warning: nks (" << this->kv.get_nks() << ") is not divisible by kpar (" << PARAM.globalv.kpar_lcao
-                      << ")." << std::endl;
+            std::cout << " Warning: nks (" << this->kv.get_nks() << ") is not divisible by kpar ("
+                      << PARAM.globalv.kpar_lcao << ")." << std::endl;
             std::cout << " This may lead to poor load balance. It is strongly suggested to" << std::endl;
             std::cout << " set nks to be divisible by kpar, but if this is really what" << std::endl;
             std::cout << " you want, please ignore this warning." << std::endl;
@@ -1062,7 +1062,8 @@ void ESolver_KS_LCAO<TK, TR>::after_scf(UnitCell& ucell, const int istep)
                               &(this->pv),
                               *(this->psi),
                               dynamic_cast<const elecstate::ElecStateLCAO<TK>*>(this->pelec)->get_DM(),
-                              p_ham_deepks);
+                              p_ham_deepks,
+                              GlobalV::MY_RANK);
     }
 #endif
 

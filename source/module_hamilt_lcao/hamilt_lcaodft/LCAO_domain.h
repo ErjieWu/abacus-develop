@@ -179,7 +179,8 @@ void DeePKS_init(const UnitCell& ucell,
                  Parallel_Orbitals& pv,
                  const int& nks,
                  const LCAO_Orbitals& orb,
-                 LCAO_Deepks& ld);
+                 LCAO_Deepks& ld,
+                 std::ofstream& ofs);
 #endif
 
 template <typename T>

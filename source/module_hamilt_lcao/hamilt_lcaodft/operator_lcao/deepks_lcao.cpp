@@ -186,17 +186,31 @@ void hamilt::DeePKS<hamilt::OperatorLCAO<TK, TR>>::contributeHR()
                                       this->ld->pdm,
                                       descriptor,
                                       this->ld->des_per_atom);
-        DeePKS_domain::cal_edelta_gedm(this->ucell->nat,
-                                this->ld->lmaxd,
-                                this->ld->nmaxd,
-                                inlmax,
-                                this->ld->des_per_atom,
-                                this->ld->inl_l,
-                                descriptor,
-                                this->ld->pdm,
-                                this->ld->model_deepks,
-                                this->ld->gedm,
-                                this->ld->E_delta);
+        if (PARAM.inp.deepks_equiv)
+        {
+            DeePKS_domain::cal_edelta_gedm_equiv(this->ucell->nat,
+                                                 this->ld->lmaxd,
+                                                 this->ld->nmaxd,
+                                                 inlmax,
+                                                 this->ld->des_per_atom,
+                                                 this->ld->inl_l,
+                                                 descriptor,
+                                                 this->ld->gedm,
+                                                 this->ld->E_delta,
+                                                 GlobalV::MY_RANK);
+        }
+        else
+        {
+            DeePKS_domain::cal_edelta_gedm(this->ucell->nat,
+                                           inlmax,
+                                           this->ld->des_per_atom,
+                                           this->ld->inl_l,
+                                           descriptor,
+                                           this->ld->pdm,
+                                           this->ld->model_deepks,
+                                           this->ld->gedm,
+                                           this->ld->E_delta);
+        }
 
         // // recalculate the H_V_delta
         // if (this->H_V_delta == nullptr)

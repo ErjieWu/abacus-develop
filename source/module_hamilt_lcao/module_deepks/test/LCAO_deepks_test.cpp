@@ -34,7 +34,7 @@ void test_deepks::check_phialpha()
     {
         na[it] = ucell.atoms[it].na;
     }
-    this->ld.init(ORB, ucell.nat, ucell.ntype, kv.nkstot, ParaO, na);
+    this->ld.init(ORB, ucell.nat, ucell.ntype, kv.nkstot, ParaO, na, GlobalV::ofs_running);
 
     DeePKS_domain::allocate_phialpha(PARAM.input.cal_force, ucell, ORB, Test_Deepks::GridD, &ParaO, this->ld.phialpha);
 
@@ -305,7 +305,7 @@ void test_deepks::check_descriptor(std::vector<torch::Tensor>& descriptor)
                                   this->ld.pdm,
                                   descriptor,
                                   this->ld.des_per_atom);
-    DeePKS_domain::check_descriptor(this->ld.inlmax, this->ld.des_per_atom, this->ld.inl_l, ucell, "./", descriptor);
+    DeePKS_domain::check_descriptor(this->ld.inlmax, this->ld.des_per_atom, this->ld.inl_l, ucell, "./", descriptor, 0);
     this->compare_with_ref("deepks_desc.dat", "descriptor_ref.dat");
 }
 
@@ -314,8 +314,8 @@ void test_deepks::check_gvx(torch::Tensor& gdmx)
     std::vector<torch::Tensor> gevdm;
     DeePKS_domain::cal_gevdm(ucell.nat, this->ld.inlmax, this->ld.inl_l, this->ld.pdm, gevdm);
     torch::Tensor gvx;
-    DeePKS_domain::cal_gvx(ucell.nat, this->ld.inlmax, this->ld.des_per_atom, this->ld.inl_l, gevdm, gdmx, gvx);
-    DeePKS_domain::check_gvx(gvx);
+    DeePKS_domain::cal_gvx(ucell.nat, this->ld.inlmax, this->ld.des_per_atom, this->ld.inl_l, gevdm, gdmx, gvx, 0);
+    DeePKS_domain::check_gvx(gvx, 0);
 
     for (int ia = 0; ia < ucell.nat; ia++)
     {
@@ -352,8 +352,9 @@ void test_deepks::check_gvepsl(torch::Tensor& gdmepsl)
                               this->ld.inl_l,
                               gevdm,
                               gdmepsl,
-                              gvepsl);
-    DeePKS_domain::check_gvepsl(gvepsl);
+                              gvepsl,
+                              0);
+    DeePKS_domain::check_gvepsl(gvepsl, 0);
 
     for (int i = 0; i < 6; i++)
     {
@@ -378,17 +379,31 @@ void test_deepks::check_edelta(std::vector<torch::Tensor>& descriptor)
     {
         ld.allocate_V_delta(ucell.nat, kv.nkstot);
     }
-    DeePKS_domain::cal_edelta_gedm(ucell.nat,
-                                   this->ld.lmaxd,
-                                   this->ld.nmaxd,
-                                   this->ld.inlmax,
-                                   this->ld.des_per_atom,
-                                   this->ld.inl_l,
-                                   descriptor,
-                                   this->ld.pdm,
-                                   this->ld.model_deepks,
-                                   this->ld.gedm,
-                                   this->ld.E_delta);
+    if (PARAM.inp.deepks_equiv)
+    {
+        DeePKS_domain::cal_edelta_gedm_equiv(ucell.nat,
+                                             this->ld.lmaxd,
+                                             this->ld.nmaxd,
+                                             this->ld.inlmax,
+                                             this->ld.des_per_atom,
+                                             this->ld.inl_l,
+                                             descriptor,
+                                             this->ld.gedm,
+                                             this->ld.E_delta,
+                                             0); // 0 for rank
+    }
+    else
+    {
+        DeePKS_domain::cal_edelta_gedm(ucell.nat,
+                                       this->ld.inlmax,
+                                       this->ld.des_per_atom,
+                                       this->ld.inl_l,
+                                       descriptor,
+                                       this->ld.pdm,
+                                       this->ld.model_deepks,
+                                       this->ld.gedm,
+                                       this->ld.E_delta);
+    }
 
     std::ofstream ofs("E_delta.dat");
     ofs << std::setprecision(10) << this->ld.E_delta << std::endl;

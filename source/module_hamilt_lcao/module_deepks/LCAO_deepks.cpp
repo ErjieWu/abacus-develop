@@ -50,12 +50,13 @@ void LCAO_Deepks::init(const LCAO_Orbitals& orb,
                        const int ntype,
                        const int nks,
                        const Parallel_Orbitals& pv_in,
-                       std::vector<int> na)
+                       std::vector<int> na,
+                       std::ofstream& ofs)
 {
     ModuleBase::TITLE("LCAO_Deepks", "init");
     ModuleBase::timer::tick("LCAO_Deepks", "init");
 
-    GlobalV::ofs_running << " Initialize the descriptor index for DeePKS (lcao line)" << std::endl;
+    ofs << " Initialize the descriptor index for DeePKS (lcao line)" << std::endl;
 
     const int lm = orb.get_lmax_d();
     const int nm = orb.get_nchimax_d();
@@ -75,8 +76,8 @@ void LCAO_Deepks::init(const LCAO_Orbitals& orb,
     this->lmaxd = lm;
     this->nmaxd = nm;
 
-    GlobalV::ofs_running << " lmax of descriptor = " << this->lmaxd << std::endl;
-    GlobalV::ofs_running << " nmax of descriptor = " << nmaxd << std::endl;
+    ofs << " lmax of descriptor = " << this->lmaxd << std::endl;
+    ofs << " nmax of descriptor = " << nmaxd << std::endl;
 
     int pdm_size = 0;
     this->inlmax = tot_inl;
@@ -92,12 +93,12 @@ void LCAO_Deepks::init(const LCAO_Orbitals& orb,
         }
         this->n_descriptor = nat * this->des_per_atom;
 
-        this->init_index(ntype, nat, na, tot_inl, orb);
+        this->init_index(ntype, nat, na, tot_inl, orb, ofs);
     }
 
     if (!PARAM.inp.deepks_equiv)
     {
-        GlobalV::ofs_running << " total basis (all atoms) for descriptor = " << std::endl;
+        ofs << " total basis (all atoms) for descriptor = " << std::endl;
 
         // init pdm
         for (int inl = 0; inl < this->inlmax; inl++)
@@ -115,7 +116,7 @@ void LCAO_Deepks::init(const LCAO_Orbitals& orb,
         }
         pdm_size = pdm_size * pdm_size;
         this->des_per_atom = pdm_size;
-        GlobalV::ofs_running << " Equivariant version, size of pdm matrices : " << pdm_size << std::endl;
+        ofs << " Equivariant version, size of pdm matrices : " << pdm_size << std::endl;
         for (int inl = 0; inl < this->inlmax; inl++)
         {
             this->pdm[inl] = torch::zeros({pdm_size}, torch::kFloat64);
@@ -132,7 +133,8 @@ void LCAO_Deepks::init_index(const int ntype,
                              const int nat,
                              std::vector<int> na,
                              const int Total_nchi,
-                             const LCAO_Orbitals& orb)
+                             const LCAO_Orbitals& orb,
+                             std::ofstream& ofs)
 {
     delete[] this->inl_index;
     this->inl_index = new ModuleBase::IntArray[ntype];
@@ -146,7 +148,7 @@ void LCAO_Deepks::init_index(const int ntype,
     {
         this->inl_index[it].create(na[it], this->lmaxd + 1, this->nmaxd);
 
-        GlobalV::ofs_running << " Type " << it + 1 << " number_of_atoms " << na[it] << std::endl;
+        ofs << " Type " << it + 1 << " number_of_atoms " << na[it] << std::endl;
 
         for (int ia = 0; ia < na[it]; ia++)
         {
@@ -163,8 +165,8 @@ void LCAO_Deepks::init_index(const int ntype,
         } // end ia
     }     // end it
     assert(Total_nchi == inl);
-    GlobalV::ofs_running << " descriptors_per_atom " << this->des_per_atom << std::endl;
-    GlobalV::ofs_running << " total_descriptors " << this->n_descriptor << std::endl;
+    ofs << " descriptors_per_atom " << this->des_per_atom << std::endl;
+    ofs << " total_descriptors " << this->n_descriptor << std::endl;
     return;
 }
 

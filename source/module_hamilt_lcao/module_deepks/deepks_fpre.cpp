@@ -267,7 +267,8 @@ void DeePKS_domain::cal_gvx(const int nat,
                             const int* inl_l,
                             const std::vector<torch::Tensor>& gevdm,
                             const torch::Tensor& gdmx,
-                            torch::Tensor& gvx)
+                            torch::Tensor& gvx,
+                            const int rank)
 {
     ModuleBase::TITLE("DeePKS_domain", "cal_gvx");
     ModuleBase::timer::tick("DeePKS_domain", "cal_gvx");
@@ -275,7 +276,7 @@ void DeePKS_domain::cal_gvx(const int nat,
     std::vector<torch::Tensor> gdmr;
     auto accessor = gdmx.accessor<double, 5>();
 
-    if (GlobalV::MY_RANK == 0)
+    if (rank == 0)
     {
         // make gdmx as tensor
         int nlmax = inlmax / nat;
@@ -340,14 +341,14 @@ void DeePKS_domain::cal_gvx(const int nat,
     return;
 }
 
-void DeePKS_domain::check_gvx(const torch::Tensor& gvx)
+void DeePKS_domain::check_gvx(const torch::Tensor& gvx, const int rank)
 {
     std::stringstream ss;
     std::ofstream ofs_x;
     std::ofstream ofs_y;
     std::ofstream ofs_z;
 
-    if (GlobalV::MY_RANK != 0)
+    if (rank != 0)
     {
         return;
     }

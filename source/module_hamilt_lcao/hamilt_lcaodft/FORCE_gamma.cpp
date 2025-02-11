@@ -256,8 +256,6 @@ void Force_LCAO<double>::ftable(const bool isforce,
         // std::vector<torch::Tensor> descriptor;
         // DeePKS_domain::cal_descriptor(ucell.nat, ld.inlmax, ld.inl_l, ld.pdm, descriptor, ld.des_per_atom);
         // DeePKS_domain::cal_edelta_gedm(ucell.nat,
-        //                         ld.lmaxd,
-        //                         ld.nmaxd,
         //                         ld.inlmax,
         //                         ld.des_per_atom,
         //                         ld.inl_l,

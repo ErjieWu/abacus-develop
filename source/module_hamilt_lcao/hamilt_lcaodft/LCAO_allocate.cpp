@@ -12,7 +12,8 @@ void DeePKS_init(const UnitCell& ucell,
                  Parallel_Orbitals& pv,
                  const int& nks,
                  const LCAO_Orbitals& orb,
-                 LCAO_Deepks& ld)
+                 LCAO_Deepks& ld,
+                 std::ofstream& ofs)
 {
     ModuleBase::TITLE("LCAO_domain", "DeePKS_init");
     // preparation for DeePKS
@@ -26,7 +27,7 @@ void DeePKS_init(const UnitCell& ucell,
             na[it] = ucell.atoms[it].na;
         }
 
-        ld.init(orb, ucell.nat, ucell.ntype, nks, pv, na);
+        ld.init(orb, ucell.nat, ucell.ntype, nks, pv, na, ofs);
 
         if (PARAM.inp.deepks_scf)
         {
