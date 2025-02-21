@@ -51,7 +51,7 @@ void Force_Stress_LCAO<T>::getForceStress(UnitCell& ucell,
                                           ModulePW::PW_Basis* rhopw,
                                           surchem& solvent,
 #ifdef __DEEPKS
-                                          LCAO_Deepks& ld,
+                                          LCAO_Deepks<T>& ld,
 #endif
 #ifdef __EXX
                                           Exx_LRI<double>& exx_lri_double,
@@ -837,7 +837,7 @@ void Force_Stress_LCAO<double>::integral_part(const bool isGammaOnly,
 #if __DEEPKS
                                               ModuleBase::matrix& fvnl_dalpha,
                                               ModuleBase::matrix& svnl_dalpha,
-                                              LCAO_Deepks& ld,
+                                              LCAO_Deepks<double>& ld,
 #endif
                                               Gint_Gamma& gint_gamma, // mohan add 2024-04-01
                                               Gint_k& gint_k,         // mohan add 2024-04-01
@@ -894,7 +894,7 @@ void Force_Stress_LCAO<std::complex<double>>::integral_part(const bool isGammaOn
 #if __DEEPKS
                                                             ModuleBase::matrix& fvnl_dalpha,
                                                             ModuleBase::matrix& svnl_dalpha,
-                                                            LCAO_Deepks& ld,
+                                                            LCAO_Deepks<std::complex<double>>& ld,
 #endif
                                                             Gint_Gamma& gint_gamma,
                                                             Gint_k& gint_k,

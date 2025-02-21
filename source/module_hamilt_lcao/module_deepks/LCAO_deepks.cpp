@@ -16,7 +16,8 @@
 #include "module_hamilt_pw/hamilt_pwdft/global.h"
 
 // Constructor of the class
-LCAO_Deepks::LCAO_Deepks()
+template <typename T>
+LCAO_Deepks<T>::LCAO_Deepks()
 {
     inl_index = new ModuleBase::IntArray[1];
     inl_l = nullptr;
@@ -25,7 +26,8 @@ LCAO_Deepks::LCAO_Deepks()
 }
 
 // Desctructor of the class
-LCAO_Deepks::~LCAO_Deepks()
+template <typename T>
+LCAO_Deepks<T>::~LCAO_Deepks()
 {
     delete[] inl_index;
     delete[] inl_l;
@@ -45,13 +47,14 @@ LCAO_Deepks::~LCAO_Deepks()
     }
 }
 
-void LCAO_Deepks::init(const LCAO_Orbitals& orb,
-                       const int nat,
-                       const int ntype,
-                       const int nks,
-                       const Parallel_Orbitals& pv_in,
-                       std::vector<int> na,
-                       std::ofstream& ofs)
+template <typename T>
+void LCAO_Deepks<T>::init(const LCAO_Orbitals& orb,
+                          const int nat,
+                          const int ntype,
+                          const int nks,
+                          const Parallel_Orbitals& pv_in,
+                          std::vector<int> na,
+                          std::ofstream& ofs)
 {
     ModuleBase::TITLE("LCAO_Deepks", "init");
     ModuleBase::timer::tick("LCAO_Deepks", "init");
@@ -129,12 +132,13 @@ void LCAO_Deepks::init(const LCAO_Orbitals& orb,
     return;
 }
 
-void LCAO_Deepks::init_index(const int ntype,
-                             const int nat,
-                             std::vector<int> na,
-                             const int Total_nchi,
-                             const LCAO_Orbitals& orb,
-                             std::ofstream& ofs)
+template <typename T>
+void LCAO_Deepks<T>::init_index(const int ntype,
+                                const int nat,
+                                std::vector<int> na,
+                                const int Total_nchi,
+                                const LCAO_Orbitals& orb,
+                                std::ofstream& ofs)
 {
     delete[] this->inl_index;
     this->inl_index = new ModuleBase::IntArray[ntype];
@@ -170,7 +174,8 @@ void LCAO_Deepks::init_index(const int ntype,
     return;
 }
 
-void LCAO_Deepks::allocate_V_delta(const int nat, const int nks)
+template <typename T>
+void LCAO_Deepks<T>::allocate_V_delta(const int nat, const int nks)
 {
     ModuleBase::TITLE("LCAO_Deepks", "allocate_V_delta");
     ModuleBase::timer::tick("LCAO_Deepks", "allocate_V_delta");
@@ -178,7 +183,7 @@ void LCAO_Deepks::allocate_V_delta(const int nat, const int nks)
     // initialize the H matrix H_V_delta
     if (PARAM.globalv.gamma_only_local)
     {
-        H_V_delta.resize(1); // the first dimension is for the consistence with H_V_delta_k
+        H_V_delta.resize(1); // the first dimension is for the consistence with H_V_delta_k, it should be nspin
         this->H_V_delta[0].resize(pv->nloc);
         ModuleBase::GlobalFunc::ZEROS(this->H_V_delta[0].data(), pv->nloc);
     }
@@ -214,11 +219,11 @@ void LCAO_Deepks::allocate_V_delta(const int nat, const int nks)
     return;
 }
 
-template <typename TK>
-void LCAO_Deepks::dpks_cal_e_delta_band(const std::vector<std::vector<TK>>& dm, const int nks)
+template <typename T>
+void LCAO_Deepks<T>::dpks_cal_e_delta_band(const std::vector<std::vector<T>>& dm, const int nks)
 {
-    std::vector<std::vector<TK>> h_delta;
-    if constexpr (std::is_same<TK, double>::value)
+    std::vector<std::vector<T>> h_delta;
+    if constexpr (std::is_same<T, double>::value)
     {
         h_delta = this->H_V_delta;
     }
@@ -229,9 +234,7 @@ void LCAO_Deepks::dpks_cal_e_delta_band(const std::vector<std::vector<TK>>& dm, 
     DeePKS_domain::cal_e_delta_band(dm, h_delta, nks, this->pv, this->e_delta_band);
 }
 
-template void LCAO_Deepks::dpks_cal_e_delta_band<double>(const std::vector<std::vector<double>>& dm, const int nks);
-template void LCAO_Deepks::dpks_cal_e_delta_band<std::complex<double>>(
-    const std::vector<std::vector<std::complex<double>>>& dm,
-    const int nks);
+template class LCAO_Deepks<double>;
+template class LCAO_Deepks<std::complex<double>>;
 
 #endif

@@ -25,7 +25,7 @@ DeePKS<OperatorLCAO<TK, TR>>::DeePKS(HS_Matrix_K<TK>* hsk_in,
                                      elecstate::DensityMatrix<TK, double>* DM_in
 #ifdef __DEEPKS
                                      ,
-                                     LCAO_Deepks* ld_in
+                                     LCAO_Deepks<TK>* ld_in
 #endif
                                      )
     : OperatorLCAO<TK, TR>(hsk_in, kvec_d_in, hR_in), DM(DM_in), ucell(ucell_in), intor_orb_alpha_(intor_orb_alpha),
@@ -486,7 +486,7 @@ void hamilt::DeePKS<hamilt::OperatorLCAO<TK, TR>>::cal_HR_IJR(const double* hr_i
 }
 
 template <typename TK>
-inline void get_h_delta_k(int ik, TK*& h_delta_k, LCAO_Deepks* ld_in)
+inline void get_h_delta_k(int ik, TK*& h_delta_k, LCAO_Deepks<TK>* ld_in)
 {
     if constexpr (std::is_same<TK, double>::value)
     {

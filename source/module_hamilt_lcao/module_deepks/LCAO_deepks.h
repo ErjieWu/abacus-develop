@@ -46,6 +46,7 @@
 // caoyu add 2021-03-29
 // wenfei modified 2022-1-5
 //
+template <typename T>
 class LCAO_Deepks
 {
 
@@ -60,7 +61,7 @@ class LCAO_Deepks
 
     /// Correction term to the Hamiltonian matrix: \f$\langle\phi|V_\delta|\phi\rangle\f$ (for gamma only)
     /// The size of first dimension is 1, which is used for the consitence with H_V_delta_k
-    std::vector<std::vector<double>> H_V_delta;
+    std::vector<std::vector<T>> H_V_delta;
     /// Correction term to Hamiltonian, for multi-k
     std::vector<std::vector<std::complex<double>>> H_V_delta_k;
 
@@ -137,8 +138,7 @@ class LCAO_Deepks
     void allocate_V_delta(const int nat, const int nks = 1);
 
     //! a temporary interface for cal_e_delta_band
-    template <typename TK>
-    void dpks_cal_e_delta_band(const std::vector<std::vector<TK>>& dm, const int nks);
+    void dpks_cal_e_delta_band(const std::vector<std::vector<T>>& dm, const int nks);
 
   private:
     // flag of HR status,

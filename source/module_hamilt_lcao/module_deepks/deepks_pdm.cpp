@@ -325,7 +325,7 @@ void DeePKS_domain::cal_pdm(bool& init_pdm,
                 } // ad2
                 if (!PARAM.inp.deepks_equiv)
                 {
-                    int ib = 0, index = 0, inc = 1;
+                    int index = 0, inc = 1;
                     for (int L0 = 0; L0 <= orb.Alpha[0].getLmax(); ++L0)
                     {
                         for (int N0 = 0; N0 < orb.Alpha[0].getNchi(L0); ++N0)
@@ -346,7 +346,6 @@ void DeePKS_domain::cal_pdm(bool& init_pdm,
                                     index++;
                                 }
                             }
-                            ib += nm;
                         }
                     }
                 }

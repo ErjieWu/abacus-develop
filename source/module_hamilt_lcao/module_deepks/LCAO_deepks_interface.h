@@ -15,7 +15,7 @@ class LCAO_Deepks_Interface
   public:
     /// @brief Constructor for LCAO_Deepks_Interface
     /// @param ld_in
-    LCAO_Deepks_Interface(std::shared_ptr<LCAO_Deepks> ld_in);
+    LCAO_Deepks_Interface(std::shared_ptr<LCAO_Deepks<TK>> ld_in);
     /// @brief output deepks-related labels, descriptors and energy corrections
     /// @param[in] etot
     /// @param[in] nks
@@ -47,7 +47,7 @@ class LCAO_Deepks_Interface
                            const int rank);
 
   private:
-    std::shared_ptr<LCAO_Deepks> ld;
+    std::shared_ptr<LCAO_Deepks<TK>> ld;
 };
 
 #endif

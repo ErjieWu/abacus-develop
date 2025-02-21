@@ -41,9 +41,9 @@ class DeePKS<OperatorLCAO<TK, TR>> : public OperatorLCAO<TK, TR>
                                  elecstate::DensityMatrix<TK, double>* DM_in
 #ifdef __DEEPKS
                                  ,
-                                 LCAO_Deepks* ld_in
+                                 LCAO_Deepks<TK>* ld_in
 #endif
-                                 );
+    );
     ~DeePKS();
 
     /**
@@ -76,7 +76,7 @@ class DeePKS<OperatorLCAO<TK, TR>> : public OperatorLCAO<TK, TR>
 
 #ifdef __DEEPKS
 
-    LCAO_Deepks* ld = nullptr;
+    LCAO_Deepks<TK>* ld = nullptr;
 
     /**
      * @brief initialize HR, search the nearest neighbor atoms

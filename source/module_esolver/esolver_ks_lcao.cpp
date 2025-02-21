@@ -1047,7 +1047,7 @@ void ESolver_KS_LCAO<TK, TR>::after_scf(UnitCell& ucell, const int istep)
     if (this->psi != nullptr && (istep % PARAM.inp.out_interval == 0))
     {
         hamilt::HamiltLCAO<TK, TR>* p_ham_deepks = dynamic_cast<hamilt::HamiltLCAO<TK, TR>*>(this->p_hamilt);
-        std::shared_ptr<LCAO_Deepks> ld_shared_ptr(&ld, [](LCAO_Deepks*) {});
+        std::shared_ptr<LCAO_Deepks<TK>> ld_shared_ptr(&ld, [](LCAO_Deepks<TK>*) {});
         LCAO_Deepks_Interface<TK, TR> LDI(ld_shared_ptr);
 
         LDI.out_deepks_labels(this->pelec->f_en.etot,
