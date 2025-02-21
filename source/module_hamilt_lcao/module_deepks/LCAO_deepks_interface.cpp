@@ -121,15 +121,7 @@ void LCAO_Deepks_Interface<TK, TR>::out_deepks_labels(const double& etot,
     }
 
     // Used for deepks_bandgap == 1 and deepks_v_delta > 0
-    std::vector<std::vector<TK>>* h_delta = nullptr;
-    if constexpr (std::is_same<TK, double>::value)
-    {
-        h_delta = &ld->H_V_delta;
-    }
-    else
-    {
-        h_delta = &ld->H_V_delta_k;
-    }
+    std::vector<std::vector<TK>>* h_delta = &ld->V_delta;
 
     // calculating deepks correction and save the results
     if (PARAM.inp.deepks_out_labels)

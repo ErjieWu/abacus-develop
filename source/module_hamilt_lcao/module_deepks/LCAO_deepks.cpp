@@ -8,7 +8,7 @@
 //   - init : allocates some arrays
 //   - init_index : records the index (inl)
 // 2. subroutines that are related to V_delta:
-//   - allocate_V_delta : allocates H_V_delta; if calculating force, it also allocates F_delta
+//   - allocate_V_delta : allocates V_delta; if calculating force, it also allocates F_delta
 
 #ifdef __DEEPKS
 
@@ -180,21 +180,12 @@ void LCAO_Deepks<T>::allocate_V_delta(const int nat, const int nks)
     ModuleBase::TITLE("LCAO_Deepks", "allocate_V_delta");
     ModuleBase::timer::tick("LCAO_Deepks", "allocate_V_delta");
 
-    // initialize the H matrix H_V_delta
-    if (PARAM.globalv.gamma_only_local)
+    // initialize the H matrix V_delta
+    V_delta.resize(nks);
+    for (int ik = 0; ik < nks; ik++)
     {
-        H_V_delta.resize(1); // the first dimension is for the consistence with H_V_delta_k, it should be nspin
-        this->H_V_delta[0].resize(pv->nloc);
-        ModuleBase::GlobalFunc::ZEROS(this->H_V_delta[0].data(), pv->nloc);
-    }
-    else
-    {
-        H_V_delta_k.resize(nks);
-        for (int ik = 0; ik < nks; ik++)
-        {
-            this->H_V_delta_k[ik].resize(pv->nloc);
-            ModuleBase::GlobalFunc::ZEROS(this->H_V_delta_k[ik].data(), pv->nloc);
-        }
+        this->V_delta[ik].resize(pv->nloc);
+        ModuleBase::GlobalFunc::ZEROS(this->V_delta[ik].data(), pv->nloc);
     }
 
     // init gedm**
@@ -222,16 +213,7 @@ void LCAO_Deepks<T>::allocate_V_delta(const int nat, const int nks)
 template <typename T>
 void LCAO_Deepks<T>::dpks_cal_e_delta_band(const std::vector<std::vector<T>>& dm, const int nks)
 {
-    std::vector<std::vector<T>> h_delta;
-    if constexpr (std::is_same<T, double>::value)
-    {
-        h_delta = this->H_V_delta;
-    }
-    else
-    {
-        h_delta = this->H_V_delta_k;
-    }
-    DeePKS_domain::cal_e_delta_band(dm, h_delta, nks, this->pv, this->e_delta_band);
+    DeePKS_domain::cal_e_delta_band(dm, this->V_delta, nks, this->pv, this->e_delta_band);
 }
 
 template class LCAO_Deepks<double>;

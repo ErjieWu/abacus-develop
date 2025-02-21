@@ -60,10 +60,8 @@ class LCAO_Deepks
     double e_delta_band = 0.0;
 
     /// Correction term to the Hamiltonian matrix: \f$\langle\phi|V_\delta|\phi\rangle\f$ (for gamma only)
-    /// The size of first dimension is 1, which is used for the consitence with H_V_delta_k
-    std::vector<std::vector<T>> H_V_delta;
-    /// Correction term to Hamiltonian, for multi-k
-    std::vector<std::vector<std::complex<double>>> H_V_delta_k;
+    /// The first dimension is for k-points V_delta(k)
+    std::vector<std::vector<T>> V_delta;
 
     //-------------------
     // private variables
@@ -118,7 +116,7 @@ class LCAO_Deepks
     //   - init : allocates some arrays
     //   - init_index : records the index (inl)
     // 2. subroutines that are related to V_delta:
-    //   - allocate_V_delta : allocates H_V_delta; if calculating force, it also allocates F_delta
+    //   - allocate_V_delta : allocates V_delta; if calculating force, it also allocates F_delta
 
   public:
     explicit LCAO_Deepks();

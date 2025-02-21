@@ -2,7 +2,7 @@
 // This file contains 2 subroutines:
 // 1. build_phialpha, which calculates the overlap
 // between atomic basis and projector alpha : <phi_mu|alpha>
-// which will be used in calculating pdm, gdmx, H_V_delta, F_delta;
+// which will be used in calculating pdm, gdmx, V_delta, F_delta;
 // 2. check_phialpha, which prints the results into .dat files
 // for checking
 

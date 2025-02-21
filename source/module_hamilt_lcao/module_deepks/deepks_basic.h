@@ -19,7 +19,7 @@ namespace DeePKS_domain
 // 1. load_model : loads model for applying V_delta
 // 2. cal_gevdm : d(des)/d(pdm), calculated using torch::autograd::grad
 // 3. cal_edelta_gedm : calculates E_delta and d(E_delta)/d(pdm)
-//       this is the term V(D) that enters the expression H_V_delta = |alpha>V(D)<alpha|
+//       this is the term V(D) that enters the expression V_delta = |alpha>V(D)<alpha|
 //       caculated using torch::autograd::grad
 // 4. check_gedm : prints gedm for checking
 // 5. cal_edelta_gedm_equiv : calculates E_delta and d(E_delta)/d(pdm) for equivariant version
