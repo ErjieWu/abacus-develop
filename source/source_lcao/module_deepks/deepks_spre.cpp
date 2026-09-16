@@ -122,13 +122,13 @@ void DeePKS_domain::cal_gdmepsl(const int nks,
                                         {
                                             accessor[mm][inl][m2][m1]
                                                 += ucell.lat0 * *dm_current
-                                                   * (grad_overlap_2[jpol]->get_value(col_indexes[iw2], ib + m2)
-                                                      * overlap_1->get_value(row_indexes[iw1], ib + m1) * r2[ipol]);
+                                                   * (grad_overlap_2[ipol]->get_value(col_indexes[iw2], ib + m2)
+                                                      * overlap_1->get_value(row_indexes[iw1], ib + m1) * r2[jpol]);
                                             accessor[mm][inl][m2][m1]
                                                 += ucell.lat0 * *dm_current
                                                    * (overlap_2->get_value(col_indexes[iw2], ib + m1)
-                                                      * grad_overlap_1[jpol]->get_value(row_indexes[iw1], ib + m2)
-                                                      * r1[ipol]);
+                                                      * grad_overlap_1[ipol]->get_value(row_indexes[iw1], ib + m2)
+                                                      * r1[jpol]);
                                             mm++;
                                         }
                                     }
