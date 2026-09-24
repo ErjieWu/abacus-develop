@@ -13,6 +13,8 @@ if(ENABLE_MLALGO)
       deepks_vdelta.cpp
       deepks_vdpre.cpp
       deepks_vdrpre.cpp
+      deepks_grad.cpp
+      deepks_pair_exx.cpp
       deepks_pdm.cpp
       deepks_phialpha.cpp
       lcao_deepks_io.cpp
@@ -34,4 +36,3 @@ if(ENABLE_MLALGO)
       add_subdirectory(test)
   endif()
 endif()
-

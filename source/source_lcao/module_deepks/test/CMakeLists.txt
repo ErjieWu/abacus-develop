@@ -1,3 +1,23 @@
+if(ENABLE_LIBXC)
+  AddTest(
+      TARGET MODULE_LCAO_DEEPKS_pair_xc
+      LIBS parameter MPI::MPI_CXX Libxc::xc
+      SOURCES test_pair_xc.cpp
+          ../../../source_hamilt/module_xc/test/test_xc1.cpp
+          ../../../source_hamilt/module_xc/xc_functional.cpp
+          ../../../source_hamilt/module_xc/libxc_setup.cpp
+  )
+endif()
+
+AddTest(
+    TARGET MODULE_LCAO_DEEPKS_projector
+    LIBS parameter device base container orb numerical_atomic_orbitals
+    SOURCES test_projector.cpp
+)
+target_compile_definitions(MODULE_LCAO_DEEPKS_projector PRIVATE
+    DEEPKS_PROJECTOR_TEST_ORB="${PROJECT_SOURCE_DIR}/tests/PP_ORB/Ti_gga_10au_100Ry_4s2p2d1f.orb"
+)
+
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/support DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 set(DEEPKS_UT_PP_ORB_DIR "${PROJECT_SOURCE_DIR}/tests/PP_ORB")
 configure_file(
@@ -77,12 +97,16 @@ if(ENABLE_COVERAGE)
   add_coverage(deepks_unit_support)
 endif()
 
+# Extract only referenced numerical objects; label unit tests do not run the
+# auxiliary hybrid SCF evaluator or require its full RI implementation.
+add_library(deepks_unit_numerics STATIC $<TARGET_OBJECTS:deepks>)
+
 set(DEEPKS_UNIT_LIBS
     deepks_unit_support
     base
     device
     parameter
-    deepks
+    deepks_unit_numerics
     psi
     planewave
     neighbor
@@ -96,6 +120,12 @@ set(DEEPKS_UNIT_LIBS
 
 set(DEEPKS_UNIT_PHIALPHA_SOURCES
     deepks_test_phialpha.cpp
+)
+
+AddTest(
+    TARGET MODULE_LCAO_DEEPKS_gradient_labels
+    LIBS ${DEEPKS_UNIT_LIBS}
+    SOURCES test_gradient_labels.cpp
 )
 set(DEEPKS_UNIT_PHIALPHA_GRID_SOURCES
     deepks_test_phialpha_grid.cpp

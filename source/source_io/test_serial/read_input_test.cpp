@@ -325,34 +325,105 @@ TEST_F(InputTest, ValidateLrRequiresNscf)
     EXPECT_EQ(valid_param.inp.calculation, "nscf");
 }
 
-TEST_F(InputTest, ValidateDeepksOutputFrequency)
+TEST_F(InputTest, RejectRetiredDeepksPairParameters)
 {
-    Parameter default_param;
-    EXPECT_NO_THROW(read_parameters("deepks_freq_default_INPUT", "", default_param));
-    EXPECT_EQ(default_param.inp.deepks_out_freq_elec, 0);
+    expect_invalid_input("deepks_old_base_INPUT", "deepks_out_base pbe\n",
+                         "THE PARAMETER NAME 'deepks_out_base' IS INCORRECT");
+    expect_invalid_input("deepks_old_target_INPUT", "deepks_out_target hse\n",
+                         "THE PARAMETER NAME 'deepks_out_target' IS INCORRECT");
+    expect_invalid_input("deepks_old_frequency_INPUT", "deepks_out_freq_elec 0\n",
+                         "THE PARAMETER NAME 'deepks_out_freq_elec' IS INCORRECT");
+}
 
-    Parameter disabled_param;
-    EXPECT_NO_THROW(read_parameters("deepks_freq_disabled_INPUT", "deepks_out_freq_elec 0\n", disabled_param));
-    EXPECT_EQ(disabled_param.inp.deepks_out_freq_elec, 0);
+TEST_F(InputTest, DeepksPairNamesAreCaseInsensitive)
+{
+    ModuleIO::ReadInput reader(0);
+    Parameter param;
+    auto assign = [&](const std::string& key, const std::string& value) {
+        for (const auto& entry : reader.get_input_lists())
+        {
+            if (entry.first == key)
+            {
+                ModuleIO::Input_Item supplied(key);
+                supplied.str_values = {value};
+                entry.second.read_value(supplied, param);
+                return;
+            }
+        }
+        FAIL() << "Unregistered parameter: " << key;
+    };
+    assign("deepks_out_pair", "1");
+    assign("deepks_out_labels", "1");
+    assign("dft_functional", "PBE");
+    assign("deepks_pair_base", "LDA");
+    assign("deepks_pair_target", "pBe");
+    for (const auto& entry : reader.get_input_lists())
+    {
+        if (entry.first != "deepks_out_pair")
+        {
+            continue;
+        }
+        const auto& item = entry.second;
+        EXPECT_NO_THROW(item.check_value(item, param));
+        assign("deepks_pair_base", "PbE");
+        EXPECT_THROW(item.check_value(item, param), std::runtime_error);
+        assign("deepks_scf", "1");
+        assign("deepks_pair_base", "None");
+        assign("deepks_pair_target", "NONE");
+        EXPECT_NO_THROW(item.check_value(item, param));
+        assign("deepks_pair_target", "PBE");
+        EXPECT_THROW(item.check_value(item, param), std::runtime_error);
+        return;
+    }
+    FAIL() << "Unregistered deepks_out_pair";
+}
 
-    expect_invalid_input("deepks_freq_negative_INPUT",
-                         "deepks_out_freq_elec -1\n",
-                         "deepks_out_freq_elec must not be negative");
-    expect_invalid_input("deepks_freq_missing_base_INPUT",
-                         "deepks_out_freq_elec 2\n",
-                         "to use deepks_out_freq_elec, please set deepks_out_base");
-
-    Parameter enabled_param;
-    testing::internal::CaptureStdout();
-    EXPECT_THROW(read_parameters("deepks_freq_enabled_INPUT",
-                                 "deepks_out_freq_elec 2\n"
-                                 "deepks_out_base pbe\n"
-                                 "deepks_out_labels 1\n",
-                                 enabled_param),
-                 std::runtime_error);
-    const std::string output = testing::internal::GetCapturedStdout();
-    EXPECT_THAT(output, testing::HasSubstr("please compile with DeePKS"));
-    EXPECT_EQ(enabled_param.inp.deepks_out_freq_elec, 2);
+TEST_F(InputTest, ValidateGradientLabelSelection)
+{
+    ModuleIO::ReadInput reader(0);
+    Parameter param;
+    auto assign = [&](const std::string& key, const std::string& value) {
+        for (const auto& entry : reader.get_input_lists())
+        {
+            if (entry.first == key)
+            {
+                ModuleIO::Input_Item supplied(key);
+                supplied.str_values = {value};
+                entry.second.read_value(supplied, param);
+                return;
+            }
+        }
+        FAIL() << "Unregistered parameter: " << key;
+    };
+    auto check = [&](const std::string& key) {
+        for (const auto& entry : reader.get_input_lists())
+        {
+            if (entry.first == key)
+            {
+                entry.second.check_value(entry.second, param);
+                return;
+            }
+        }
+        FAIL() << "Unregistered parameter: " << key;
+    };
+    assign("deepks_grad", "1");
+    assign("deepks_out_labels", "1");
+    EXPECT_NO_THROW(check("deepks_grad"));
+    assign("deepks_v_delta", "-1");
+    EXPECT_THROW(check("deepks_v_delta"), std::runtime_error);
+    assign("deepks_v_delta", "0");
+    for (const auto& invalid : std::vector<std::pair<std::string, std::string>>{
+             {"deepks_bandgap", "1"}, {"deepks_equiv", "1"},
+             {"deepks_out_labels", "2"}, {"nspin", "2"}})
+    {
+        assign(invalid.first, invalid.second);
+        EXPECT_THROW(check("deepks_grad"), std::runtime_error) << invalid.first;
+        assign(invalid.first, invalid.first == "nspin" || invalid.first == "deepks_out_labels" ? "1" : "0");
+    }
+    EXPECT_NO_THROW(check("deepks_grad"));
+    assign("deepks_grad", "0");
+    assign("deepks_v_delta", "-1");
+    EXPECT_NO_THROW(check("deepks_v_delta"));
 }
 
 TEST_F(InputTest, ValidateDiagoProc)

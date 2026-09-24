@@ -1,1 +1,12 @@
-test output for deepks_out_freq_elec > 0, for gamma_only H2O molecule
+Test same-density LDA/PBE direct paired labels for the gamma-only H2O molecule.
+PBE drives SCF; the label-only LDA evaluation must not change the active result.
+The historical directory name is retained to preserve case numbering.
+Paired arrays use OUT.autotest/deepks_sample_*.npy and deepks_pair_*.npy.
+
+The ordinary Hamiltonian reference now matches pair-disabled SCF. The retired
+output path refreshed the active Hamiltonian at the output density as a side
+effect. Paired delta-E/delta-H samples retain their previous numerical values.
+The stress-operator checksum was checked against a separate HEAD build: the
+previous result.ref value was already stale before this refactor.
+Final paired force/virial labels are fixed-density derivative differences;
+they are not legacy auxiliary forces with an SCF charge-correction term.

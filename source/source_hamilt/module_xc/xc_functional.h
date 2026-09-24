@@ -41,8 +41,14 @@ struct XCFunctionalParameters
     std::vector<double> xc_corr_ext;
 };
 
+namespace DeePKS_domain
+{
+class ScopedXCState;
+}
+
 class XC_Functional
 {
+    friend class DeePKS_domain::ScopedXCState;
     public:
 
     XC_Functional();

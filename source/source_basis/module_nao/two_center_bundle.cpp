@@ -5,6 +5,7 @@
 #include "source_base/parallel_common.h"
 #include "source_base/ylm.h"
 #include "source_basis/module_nao/real_gaunt_table.h"
+#include "source_lcao/module_deepks/deepks_projector.h"
 
 #include <memory>
 
@@ -253,7 +254,8 @@ void TwoCenterBundle::to_LCAO_Orbitals(LCAO_Orbitals& ORB,
         ORB.Alpha = new Numerical_Orbital[alpha_->ntype()];
         for (int itype = 0; itype < alpha_->ntype(); ++itype)
         {
-            (*alpha_)(itype).to_numerical_orbital(ORB.Alpha[itype], ORB.kmesh, ORB.dk, out_element_info, cal_force);
+            DeePKS_domain::projectors_to_numerical_orbital(
+                (*alpha_)(itype), ORB.Alpha[itype], ORB.kmesh, ORB.dk, out_element_info, cal_force);
         }
     }
 }

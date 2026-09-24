@@ -230,8 +230,10 @@
     - [bessel\_nao\_sigma](#bessel_nao_sigma)
   - [DeePKS](#deepks)
     - [deepks\_out\_labels](#deepks_out_labels)
-    - [deepks\_out\_freq\_elec](#deepks_out_freq_elec)
-    - [deepks\_out\_base](#deepks_out_base)
+    - [deepks\_out\_pair](#deepks_out_pair)
+    - [deepks\_out\_pair\_freq](#deepks_out_pair_freq)
+    - [deepks\_pair\_base](#deepks_pair_base)
+    - [deepks\_pair\_target](#deepks_pair_target)
     - [deepks\_scf](#deepks_scf)
     - [deepks\_equiv](#deepks_equiv)
     - [deepks\_model](#deepks_model)
@@ -244,6 +246,7 @@
     - [deepks\_bandgap](#deepks_bandgap)
     - [deepks\_band\_range](#deepks_band_range)
     - [deepks\_v\_delta](#deepks_v_delta)
+    - [deepks\_grad](#deepks_grad)
     - [deepks\_out\_unittest](#deepks_out_unittest)
   - [OFDFT: orbital free density functional theory](#ofdft-orbital-free-density-functional-theory)
     - [of\_kinetic](#of_kinetic)
@@ -2619,19 +2622,39 @@
   > Note: When deepks_out_labels equals 1, the path of a numerical descriptor (an orb file) is needed to be specified under the NUMERICAL_DESCRIPTOR tag in the STRU file. This is not needed when deepks_out_labels equals 2.
 - **Default**: 0
 
-### deepks_out_freq_elec
+
+### deepks_out_pair
+
+- **Type**: Boolean
+- **Availability**: *[`basis_type`](#basis_type)==lcao*
+- **Description**: Output paired fixed-density energy and real-space Hamiltonian-gradient samples. deepks_pair_base and deepks_pair_target define one ordered functional pair; dft_functional must equal one of them and determines which functional drives the active SCF. Ordinary active functionals preserve the first, interval-selected, and final electronic states according to deepks_out_pair_freq. For an active functional containing exact exchange, ABACUS applies the interval to the initial semilocal inner loop and preserves every later density-converged outer checkpoint. Independent label-only EXX evaluators construct any required hybrid operator at each selected density without changing the active SCF. The descriptor d[rho], energy E_target[rho]-E_base[rho], raw metric M=A_base[rho]^T A_base[rho], and raw projection b=A_base[rho]^T(H_target[rho]-H_base[rho]) are evaluated at the same density matrix. Outputs use the deepks_sample_*.npy prefix in OUT.${suffix}.
+
+  > Note: This mode requires deepks_out_labels=1, nspin=1 and eigenvalue descriptors. deepks_grad selects gradient samples (raw metric and projection); when false, deepks_v_delta selects direct Hamiltonian differences and precalculation operators. Direct files use deepks_sample_hr_sN.csr or deepks_sample_hk_sN.npy plus the selected *_pre or factorized intermediates, where N is the zero-based saved-sample index. Energy, descriptor, step and kind arrays are shared by both representations. The Hamiltonian and energy are target-minus-base quantities at the same density, in Hartree. Paired band-gap labels are not implemented.
+
+  With deepks_scf=1 and both pair names omitted, compare the underlying dft_functional with that functional plus the loaded model: the sampled energy is E_model[d] and the Hamiltonian projection is M*dE_model/dd. With explicit pair names, the functionals must differ; dft_functional must be deepks_pair_base when a model is active, and the model correction is excluded from both named reference operators.
+- **Default**: False
+
+### deepks_out_pair_freq
 
 - **Type**: Integer
-- **Availability**: *[`basis_type`](#basis_type)==lcao*
-- **Description**: When deepks_out_freq_elec is greater than 0, print labels and descriptors for DeePKS in OUT.${suffix}/DeePKS_Labels_Elec per deepks_out_freq_elec electronic iterations, with suffix _e* to distinguish different steps. Often used with deepks_out_labels equals 1.
-- **Default**: 0
+- **Availability**: *[`basis_type`](#basis_type)==lcao and [`deepks_out_pair`](#deepks_out_pair)==true*
+- **Description**: Save the first ordinary electronic state, every deepks_out_pair_freq states, and the final/converged state. Exact-exchange outer checkpoints remain preserved because they are already sparse.
+- **Default**: 1
 
-### deepks_out_base
+### deepks_pair_base
 
 - **Type**: String
-- **Availability**: *[`basis_type`](#basis_type)==lcao and [`deepks_out_freq_elec`](#deepks_out_freq_elec)>0*
-- **Description**: Print labels and descriptors calculated by base functional ( determined by deepks_out_base ) and target functional ( determined by dft_functional ) for DeePKS in per deepks_out_freq_elec electronic iterations. The SCF process, labels and descriptors output of the target functional are all consistent with those when the target functional is used alone. The only additional output under this configuration is the labels of the base functional. Often used with deepks_out_labels equals 1.
+- **Availability**: *[`basis_type`](#basis_type)==lcao and [`deepks_out_pair`](#deepks_out_pair)==true*
+- **Description**: Base functional B in E_target[rho]-E_base[rho] and A[rho]^T(H_target[rho]-H_base[rho]). With deepks_scf=1, omit both pair names to compare the underlying dft_functional with its DeePKS-corrected result. Otherwise specify both names.
 - **Default**: None
+
+### deepks_pair_target
+
+- **Type**: String
+- **Availability**: *[`basis_type`](#basis_type)==lcao and [`deepks_out_pair`](#deepks_out_pair)==true*
+- **Description**: Target functional T in E_target[rho]-E_base[rho] and A[rho]^T(H_target[rho]-H_base[rho]). With deepks_scf=1 and both pair names omitted, the target is the underlying dft_functional plus the loaded DeePKS model. An explicit named pair excludes the active model from both reference operators.
+- **Default**: None
+
 
 ### deepks_scf
 
@@ -2727,12 +2750,21 @@
 
 - **Type**: Integer
 - **Availability**: *[`basis_type`](#basis_type)==lcao*
-- **Description**: Include V_delta/V_delta_R (Hamiltonian in k/real space) label for DeePKS training. When deepks_out_labels is true and deepks_v_delta &gt; 0 (k space), ABACUS will output deepks_hbase.npy, deepks_vdelta.npy and deepks_htot.npy(htot=hbase+vdelta). When deepks_out_labels is true and deepks_v_delta &lt; 0 (real space), ABACUS will output deepks_hrtot.csr, deepks_hrdelta.csr. Some more files output for different settings. NOTICE: To match the unit Normally used in DeePKS, the unit of Hamiltonian in k space is Hartree. However, currently in R space the unit is still Ry.
+- **Description**: Include V_delta/V_delta_R (Hamiltonian in k/real space) label for DeePKS training. When deepks_out_labels is true and deepks_v_delta &gt; 0 (k space), ABACUS will output deepks_hbase.npy, deepks_vdelta.npy and deepks_htot.npy(htot=hbase+vdelta). When deepks_out_labels is true and deepks_v_delta &lt; 0 (real space), ABACUS will output deepks_hrtot.csr, deepks_hrdelta.csr. All DeePKS energy and Hamiltonian labels are output in Hartree.
   - deepks_v_delta = 1: deepks_vdpre.npy, which is used to calculate V_delta during DeePKS training.
   - deepks_v_delta = 2: deepks_phialpha.npy and deepks_gevdm.npy, which can be used to calculate deepks_vdpre.npy. A recommanded method for memory saving.
   - deepks_v_delta = -1: deepks_vdrpre.npy, which is used to calculate V_delta_R during DeePKS training.
   - deepks_v_delta = -2: deepks_phialpha_r.npy and deepks_gevdm.npy, which can be used to calculate deepks_vdrpre.npy. A recommanded method for memory saving.
+
+  This parameter selects direct labels only. Leave it at 0 when deepks_grad is true; real-space Hamiltonian gradient intermediates are then selected automatically.
 - **Default**: 0
+
+### deepks_grad
+
+- **Type**: Boolean
+- **Availability**: *[`basis_type`](#basis_type)==lcao and [`deepks_out_labels`](#deepks_out_labels)==1*
+- **Description**: Select gradient intermediates instead of direct property labels. Real-space Hamiltonian intermediates are always included: deepks_gevdm.npy, deepks_vdrpre_square.npy and deepks_dot_phialpha_hamilt.npy. Force and virial operators and Gram matrices are additionally generated when cal_force and cal_stress are enabled, including model-free runs (deepks_scf=0). Energy remains a scalar label. The projected Hamiltonian uses Hartree, consistently with direct DeePKS labels. Requires deepks_out_labels=1, nspin=1 and a numerical descriptor. Leave deepks_v_delta=0; band-gap gradient labels are not supported.
+- **Default**: False
 
 ### deepks_out_unittest
 

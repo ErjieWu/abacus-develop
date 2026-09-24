@@ -33,7 +33,9 @@ deepks_v_delta    1
 cal_force         1
 cal_stress        1
 
-deepks_out_freq_elec  1
+deepks_out_pair       1
+deepks_out_pair_freq  1
 
 dft_functional    pbe
-deepks_out_base   lda
+deepks_pair_base  lda
+deepks_pair_target pbe

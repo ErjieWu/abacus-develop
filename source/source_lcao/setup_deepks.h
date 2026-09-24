@@ -61,7 +61,7 @@ class Setup_DeePKS
 
 // Free functions that write the DeePKS force/stress labels to .npy files.
 // They are independent of the electronic type TK, so they live outside
-// Setup_DeePKS and only need the output-type selector dpks_out_type.
+// Setup_DeePKS. Auxiliary paired evaluations do not invoke these writers.
 namespace DeePKS_domain
 {
 

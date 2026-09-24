@@ -245,6 +245,8 @@ OBJS_DEEPKS=lcao_deepks.o\
         deepks_vdelta.o\
         deepks_vdpre.o\
         deepks_vdrpre.o\
+        deepks_grad.o\
+        deepks_pair_exx.o\
         deepks_pdm.o\
         deepks_phialpha.o\
         lcao_deepks_io.o\

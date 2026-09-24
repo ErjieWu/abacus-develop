@@ -3,6 +3,7 @@
 #include "source_lcao/module_deepks/deepks_basic.h"
 #include "source_lcao/module_deepks/deepks_check.h"
 #include "source_lcao/module_deepks/deepks_spre.h"
+#include "source_lcao/module_deepks/deepks_grad.h"
 
 #include <complex>
 
@@ -15,6 +16,10 @@ void test_deepks<T>::check_gvepsl(torch::Tensor& gdmepsl)
     DeePKS_domain::cal_gvepsl(ucell.nat, this->ld.deepks_param, gevdm, gdmepsl, gvepsl, 0);
     DeePKS_domain::check_tensor<double>(gvepsl, "gvepsl.dat", 0);
     this->assert_file_matches_reference("gvepsl.dat", "gvepsl_ref.dat");
+    torch::Tensor metric;
+    DeePKS_domain::cal_gvepsl_square(gvepsl, metric);
+    const auto virial_operator = gvepsl.reshape({6, -1});
+    EXPECT_TRUE(torch::allclose(metric, virial_operator.t().mm(virial_operator), 1e-12, 1e-14));
 }
 
 template void test_deepks<double>::check_gvepsl(torch::Tensor& gdmepsl);

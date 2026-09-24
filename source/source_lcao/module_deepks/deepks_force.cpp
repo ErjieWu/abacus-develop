@@ -30,6 +30,10 @@ void DeePKS_domain::cal_f_delta(const UnitCell& ucell,
     ModuleBase::TITLE("DeePKS_domain", "cal_f_delta");
     ModuleBase::timer::start("DeePKS_domain", "cal_f_delta");
     const bool spin2 = (dmr_mag != nullptr && gedm_mag != nullptr); // nspin=2 magnetization channel
+    if (f_delta.nr != ucell.nat || f_delta.nc != 3)
+    {
+        f_delta.create(ucell.nat, 3);
+    }
     f_delta.zero_out();
 
     const int lmaxd = orb.get_lmax_d();

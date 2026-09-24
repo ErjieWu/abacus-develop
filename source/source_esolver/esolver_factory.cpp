@@ -217,8 +217,9 @@ ESolver* init_esolver(const Input_para& inp)
                 return new ESolver_GetS();
             }
         }
-        else if (inp.deepks_out_base != "none")
+        else if (inp.deepks_out_pair)
         {
+#ifdef __MLALGO
             if (gamma_only)
             {
                 return new ESolver_DoubleXC<double, double>();
@@ -231,6 +232,10 @@ ESolver* init_esolver(const Input_para& inp)
             {
                 return new ESolver_DoubleXC<std::complex<double>, std::complex<double>>();
             }
+#else
+            ModuleBase::WARNING_QUIT("ESolver", "DeePKS pair output requires ENABLE_MLALGO=ON");
+            return nullptr;
+#endif
         }
         else if (inp.dm_to_rho)
         {

@@ -3,6 +3,7 @@
 #include "source_lcao/module_deepks/deepks_basic.h"
 #include "source_lcao/module_deepks/deepks_check.h"
 #include "source_lcao/module_deepks/deepks_vdrpre.h"
+#include "source_lcao/module_deepks/deepks_grad.h"
 
 #include <complex>
 
@@ -45,6 +46,12 @@ void test_deepks<T>::check_vdrpre()
     this->assert_file_matches_reference("vdr_precalc.dat", "vdrpre_ref.dat");
     this->assert_file_matches_reference("phialpha_r.dat", "phialpha_r_ref.dat");
     this->assert_file_matches_reference("iRmat.dat", "iRmat_ref.dat");
+    torch::Tensor metric;
+    DeePKS_domain::cal_vdrpre_square(this->nlocal, ucell.nat, R_size,
+                                    this->ld.deepks_param, this->ld.phialpha, gevdm,
+                                    ucell, ORB, ParaO, Test_Deepks::GridD, metric);
+    const auto hr_operator = vdrpre.reshape({-1, metric.size(0)});
+    EXPECT_TRUE(torch::allclose(metric, hr_operator.t().mm(hr_operator), 1e-12, 1e-14));
 }
 
 template void test_deepks<double>::check_vdrpre();

@@ -3,8 +3,22 @@
 #include "source_io/module_parameter/parameter.h"
 #include "read_input.h"
 #include "read_input_tool.h"
+
+#include <algorithm>
+#include <cctype>
+
 namespace ModuleIO
 {
+namespace
+{
+std::string functional_name(std::string name)
+{
+    std::transform(name.begin(), name.end(), name.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    return name;
+}
+}
+
 void ReadInput::item_deepks()
 {
     // NOTE: The order of add_item() calls below determines the parameter order
@@ -28,47 +42,114 @@ void ReadInput::item_deepks()
         this->add_item(item);
     }
     {
-        Input_Item item("deepks_out_freq_elec");
-        item.annotation = ">0 frequency of electronic iteration to output descriptors and labels for deepks.";
+        Input_Item item("deepks_out_pair");
+        item.annotation = "output same-density paired-functional labels in direct or gradient form";
         item.category = "DeePKS";
-        item.type = "Integer";
-        item.description = "When deepks_out_freq_elec is greater than 0, print labels and descriptors for DeePKS in OUT.${suffix}/DeePKS_Labels_Elec per deepks_out_freq_elec electronic iterations, with suffix _e* to distinguish different steps. Often used with deepks_out_labels equals 1.";
-        item.default_value = "0";
+        item.type = "Boolean";
+        item.description = R"(Output paired fixed-density energy and real-space Hamiltonian-gradient samples. deepks_pair_base and deepks_pair_target define one ordered functional pair; dft_functional must equal one of them and determines which functional drives the active SCF. Ordinary active functionals preserve the first, interval-selected, and final electronic states according to deepks_out_pair_freq. For an active functional containing exact exchange, ABACUS applies the interval to the initial semilocal inner loop and preserves every later density-converged outer checkpoint. Independent label-only EXX evaluators construct any required hybrid operator at each selected density without changing the active SCF. The descriptor d[rho], energy E_target[rho]-E_base[rho], raw metric M=A_base[rho]^T A_base[rho], and raw projection b=A_base[rho]^T(H_target[rho]-H_base[rho]) are evaluated at the same density matrix. Outputs use the deepks_sample_*.npy prefix in OUT.${suffix}.
+
+[NOTE] This mode requires deepks_out_labels=1, nspin=1 and eigenvalue descriptors. deepks_grad selects gradient samples (raw metric and projection); when false, deepks_v_delta selects direct Hamiltonian differences and precalculation operators. Direct files use deepks_sample_hr_sN.csr or deepks_sample_hk_sN.npy plus the selected *_pre or factorized intermediates, where N is the zero-based saved-sample index. Energy, descriptor, step and kind arrays are shared by both representations. The Hamiltonian and energy are target-minus-base quantities at the same density, in Hartree. Paired band-gap labels are not implemented.
+
+With deepks_scf=1 and both pair names omitted, compare the underlying dft_functional with that functional plus the loaded model: the sampled energy is E_model[d] and the Hamiltonian projection is M*dE_model/dd. With explicit pair names, the functionals must differ; dft_functional must be deepks_pair_base when a model is active, and the model correction is excluded from both named reference operators.)";
+        item.default_value = "False";
         item.unit = "";
         item.set_availability("basis_type==lcao");
-        read_sync_int(input.deepks_out_freq_elec);
+        read_sync_bool(input.deepks_out_pair);
         item.check_value = [](const Input_Item& item, const Parameter& para) {
-            if (para.input.deepks_out_freq_elec < 0)
+            if (!para.input.deepks_out_pair)
             {
-                ModuleBase::WARNING_QUIT("ReadInput", "deepks_out_freq_elec must not be negative");
+                return;
             }
-            if (para.input.deepks_out_freq_elec > 0 && para.input.deepks_out_base == "none")
+            if (para.input.deepks_out_labels != 1)
             {
-                ModuleBase::WARNING_QUIT("ReadInput", "to use deepks_out_freq_elec, please set deepks_out_base ");
-            }            
+                ModuleBase::WARNING_QUIT("ReadInput", "deepks_out_pair requires deepks_out_labels 1");
+            }
+            if (para.input.deepks_bandgap != 0)
+            {
+                ModuleBase::WARNING_QUIT("ReadInput", "paired band-gap labels are not implemented");
+            }
+            if (para.input.deepks_equiv)
+            {
+                ModuleBase::WARNING_QUIT("ReadInput", "deepks_out_pair requires eigenvalue descriptors");
+            }
+            if (para.input.nspin != 1)
+            {
+                ModuleBase::WARNING_QUIT("ReadInput", "deepks_out_pair currently supports nspin 1 only");
+            }
+            const std::string base = functional_name(para.input.deepks_pair_base);
+            const std::string target = functional_name(para.input.deepks_pair_target);
+            const std::string active = functional_name(para.input.dft_functional);
+            const bool has_base = base != "none";
+            const bool has_target = target != "none";
+            if (!has_base && !has_target && para.input.deepks_scf)
+            {
+                return; // Default pair: underlying functional versus its model-corrected result.
+            }
+            if (!has_base || !has_target)
+            {
+                ModuleBase::WARNING_QUIT("ReadInput",
+                                         "deepks_out_pair requires deepks_pair_base and deepks_pair_target");
+            }
+            if (base == target)
+            {
+                ModuleBase::WARNING_QUIT("ReadInput", "deepks_pair_base and deepks_pair_target must differ");
+            }
+            const bool active_is_base = active == base;
+            const bool active_is_target = active == target;
+            if (!active_is_base && !active_is_target)
+            {
+                ModuleBase::WARNING_QUIT(
+                    "ReadInput", "dft_functional must equal deepks_pair_base or deepks_pair_target");
+            }
+            if (para.input.deepks_scf && !active_is_base)
+            {
+                ModuleBase::WARNING_QUIT(
+                    "ReadInput",
+                    "deepks_scf paired output requires dft_functional=deepks_pair_base");
+            }
         };
         this->add_item(item);
     }
     {
-        Input_Item item("deepks_out_base");
-        item.annotation = "base functional for output files, with dft_functional as target functional";
+        Input_Item item("deepks_out_pair_freq");
+        item.annotation = "electronic-step interval for same-density paired labels";
         item.category = "DeePKS";
-        item.type = "String";
-        item.description = "Print labels and descriptors calculated by base functional ( determined by deepks_out_base ) and target functional ( determined by dft_functional ) for DeePKS in per deepks_out_freq_elec electronic iterations. The SCF process, labels and descriptors output of the target functional are all consistent with those when the target functional is used alone. The only additional output under this configuration is the labels of the base functional. Often used with deepks_out_labels equals 1.";
-        item.default_value = "None";
+        item.type = "Integer";
+        item.description = "Save the first ordinary electronic state, every deepks_out_pair_freq states, and the final/converged state. Exact-exchange outer checkpoints remain preserved because they are already sparse.";
+        item.default_value = "1";
         item.unit = "";
-        item.set_availability("basis_type==lcao and deepks_out_freq_elec>0");
-        read_sync_string(input.deepks_out_base);
+        item.set_availability("basis_type==lcao and deepks_out_pair==true");
+        read_sync_int(input.deepks_out_pair_freq);
         item.check_value = [](const Input_Item& item, const Parameter& para) {
-            if (para.input.deepks_out_base != "none" && para.input.deepks_out_labels == 0)
+            if (para.input.deepks_out_pair_freq < 1)
             {
-                ModuleBase::WARNING_QUIT("ReadInput", "to use deepks_out_base, please set deepks_out_labels > 0 ");
-            }
-            if (para.input.deepks_out_base != "none" && para.input.deepks_bandgap > 0 )
-            {
-                ModuleBase::WARNING_QUIT("ReadInput", "outputting bandgap labels during electronic steps is not implemented yet ");
+                ModuleBase::WARNING_QUIT("ReadInput", "deepks_out_pair_freq must be at least 1");
             }
         };
+        this->add_item(item);
+    }
+    {
+        Input_Item item("deepks_pair_base");
+        item.annotation = "base functional for paired fixed-density labels";
+        item.category = "DeePKS";
+        item.type = "String";
+        item.description = "Base functional B in E_target[rho]-E_base[rho] and A[rho]^T(H_target[rho]-H_base[rho]). With deepks_scf=1, omit both pair names to compare the underlying dft_functional with its DeePKS-corrected result. Otherwise specify both names.";
+        item.default_value = "None";
+        item.unit = "";
+        item.set_availability("basis_type==lcao and deepks_out_pair==true");
+        read_sync_string(input.deepks_pair_base);
+        this->add_item(item);
+    }
+    {
+        Input_Item item("deepks_pair_target");
+        item.annotation = "target functional for paired fixed-density labels";
+        item.category = "DeePKS";
+        item.type = "String";
+        item.description = "Target functional T in E_target[rho]-E_base[rho] and A[rho]^T(H_target[rho]-H_base[rho]). With deepks_scf=1 and both pair names omitted, the target is the underlying dft_functional plus the loaded DeePKS model. An explicit named pair excludes the active model from both reference operators.";
+        item.default_value = "None";
+        item.unit = "";
+        item.set_availability("basis_type==lcao and deepks_out_pair==true");
+        read_sync_string(input.deepks_pair_target);
         this->add_item(item);
     }
     {
@@ -288,11 +369,13 @@ void ReadInput::item_deepks()
                           " -1 for vdrpre, -2 for phialpha_r and gevdm (can save memory)";
         item.category = "DeePKS";
         item.type = "Integer";
-        item.description = R"(Include V_delta/V_delta_R (Hamiltonian in k/real space) label for DeePKS training. When deepks_out_labels is true and deepks_v_delta > 0 (k space), ABACUS will output deepks_hbase.npy, deepks_vdelta.npy and deepks_htot.npy(htot=hbase+vdelta). When deepks_out_labels is true and deepks_v_delta < 0 (real space), ABACUS will output deepks_hrtot.csr, deepks_hrdelta.csr. Some more files output for different settings. NOTICE: To match the unit Normally used in DeePKS, the unit of Hamiltonian in k space is Hartree. However, currently in R space the unit is still Ry.
+        item.description = R"(Include V_delta/V_delta_R (Hamiltonian in k/real space) label for DeePKS training. When deepks_out_labels is true and deepks_v_delta > 0 (k space), ABACUS will output deepks_hbase.npy, deepks_vdelta.npy and deepks_htot.npy(htot=hbase+vdelta). When deepks_out_labels is true and deepks_v_delta < 0 (real space), ABACUS will output deepks_hrtot.csr, deepks_hrdelta.csr. All DeePKS energy and Hamiltonian labels are output in Hartree.
 * deepks_v_delta = 1: deepks_vdpre.npy, which is used to calculate V_delta during DeePKS training.
 * deepks_v_delta = 2: deepks_phialpha.npy and deepks_gevdm.npy, which can be used to calculate deepks_vdpre.npy. A recommanded method for memory saving.
 * deepks_v_delta = -1: deepks_vdrpre.npy, which is used to calculate V_delta_R during DeePKS training.
-* deepks_v_delta = -2: deepks_phialpha_r.npy and deepks_gevdm.npy, which can be used to calculate deepks_vdrpre.npy. A recommanded method for memory saving.)";
+* deepks_v_delta = -2: deepks_phialpha_r.npy and deepks_gevdm.npy, which can be used to calculate deepks_vdrpre.npy. A recommanded method for memory saving.
+
+This parameter selects direct labels only. Leave it at 0 when deepks_grad is true; real-space Hamiltonian gradient intermediates are then selected automatically.)";
         item.default_value = "0";
         item.unit = "";
         item.set_availability("basis_type==lcao");
@@ -301,6 +384,42 @@ void ReadInput::item_deepks()
             if (para.input.deepks_v_delta < -2 || para.input.deepks_v_delta > 2)
             {
                 ModuleBase::WARNING_QUIT("ReadInput", "deepks_v_delta must be integer in [-2, 2]");
+            }
+            if (para.input.deepks_grad && para.input.deepks_v_delta != 0)
+            {
+                ModuleBase::WARNING_QUIT("ReadInput",
+                                        "deepks_v_delta selects direct labels only; use 0 with deepks_grad");
+            }
+        };
+        this->add_item(item);
+    }
+    {
+        Input_Item item("deepks_grad");
+        item.annotation = "output descriptor-gradient label intermediates for DeePKS training";
+        item.category = "DeePKS";
+        item.type = "Boolean";
+        item.description = "Select gradient intermediates instead of direct property labels. Real-space Hamiltonian intermediates are always included: deepks_gevdm.npy, deepks_vdrpre_square.npy and deepks_dot_phialpha_hamilt.npy. Force and virial operators and Gram matrices are additionally generated when cal_force and cal_stress are enabled, including model-free runs (deepks_scf=0). Energy remains a scalar label. The projected Hamiltonian uses Hartree, consistently with direct DeePKS labels. Requires deepks_out_labels=1, nspin=1 and a numerical descriptor. Leave deepks_v_delta=0; band-gap gradient labels are not supported.";
+        item.default_value = "False";
+        item.unit = "";
+        item.set_availability("basis_type==lcao and deepks_out_labels==1");
+        read_sync_bool(input.deepks_grad);
+        item.check_value = [](const Input_Item& item, const Parameter& para) {
+            if (para.input.deepks_grad && para.input.nspin != 1)
+            {
+                ModuleBase::WARNING_QUIT("ReadInput", "deepks_grad currently supports nspin 1 only");
+            }
+            if (para.input.deepks_grad && para.input.deepks_out_labels != 1)
+            {
+                ModuleBase::WARNING_QUIT("ReadInput",
+                    "deepks_grad requires deepks_out_labels 1");
+            }
+            if (para.input.deepks_grad && para.input.deepks_bandgap != 0)
+            {
+                ModuleBase::WARNING_QUIT("ReadInput", "deepks_bandgap is not supported with deepks_grad");
+            }
+            if (para.input.deepks_grad && para.input.deepks_equiv)
+            {
+                ModuleBase::WARNING_QUIT("ReadInput", "deepks_grad requires eigenvalue descriptors, not deepks_equiv");
             }
         };
         this->add_item(item);

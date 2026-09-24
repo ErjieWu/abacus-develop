@@ -305,7 +305,7 @@ void ReadInput::create_directory(const Parameter& param)
                                           param.globalv.global_deepks_label_elec_dir,
                                           param.globalv.log_file,
                                           param.input.of_ml_gene_data,
-                                          param.input.deepks_out_freq_elec > 0); // xiaohui add 2013-09-01
+                                          false); // Paired labels use the ordinary output directory.
     //const std::string ss = "test -d " + PARAM.inp.read_file_dir;
     struct stat st;
     if (stat(PARAM.inp.read_file_dir.c_str(), &st) != 0 || !S_ISDIR(st.st_mode))

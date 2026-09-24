@@ -2,10 +2,6 @@
 
 #include "source_base/global_variable.h" // use GlobalC
 #include "source_hamilt/module_xc/exx_info.h"
-#ifdef __MLALGO
-#include "source_lcao/module_deepks/lcao_deepks.h"
-#include "source_lcao/module_deepks/lcao_deepks_iface.h"
-#endif
 #include "source_io/module_restart/restart.h"
 #ifdef __EXX
 #include "source_lcao/module_ri/exx_lri_interface.h"
@@ -65,22 +61,6 @@ void ctrl_iter_lcao(UnitCell& ucell, // unit cell *
     }
 #endif
 
-
-    // for deepks, output labels during electronic steps (after conv_esolver is renewed)
-#ifdef __MLALGO
-    if (inp.deepks_out_labels >0 && inp.deepks_out_freq_elec)
-    {
-        if (iter % inp.deepks_out_freq_elec == 0 )
-        {
-            LCAO_Deepks_Interface<TK, TR> deepks_interface(&deepks.ld);
-
-            deepks_interface.out_deepks_labels(pelec->f_en.etot, kv.get_nks(),
-              ucell.nat, PARAM.globalv.nlocal, pelec->ekb, kv.kvec_d,
-              ucell, orb, gd, &pv, *psi, &dm,
-              p_hamilt, iter, conv_esolver, GlobalV::MY_RANK, GlobalV::ofs_running);
-        }
-    }
-#endif
 
     ModuleBase::timer::end("ModuleIO", "ctrl_iter_lcao");
 }

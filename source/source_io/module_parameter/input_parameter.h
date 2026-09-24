@@ -281,14 +281,17 @@ struct Input_para
     //==========================================================
     int deepks_out_labels = 0;                    ///< (need libnpy) prints energy and force labels and
                                                   ///< descriptors for training, wenfei 2022-1-12
-    int deepks_out_freq_elec = 0;                 ///< (need libnpy) frequency of electronic iteration to output
                                                   ///< descriptors and labels, default is 0, which means no output until convergence
-    std::string deepks_out_base = "none";         ///< (need libnpy) base functional for output files
     bool deepks_scf = false;                      ///< (need libnpy and libtorch) if set to true, a trained model
                                                   ///< would be needed to calculate V_delta and F_delta
     int deepks_bandgap = 0;                       ///< for bandgap label. QO added 2021-12-15
+    bool deepks_out_pair = false;      ///< output same-density paired-functional samples
+    int deepks_out_pair_freq = 1;      ///< active electronic-state interval; endpoints are always retained
+    std::string deepks_pair_base = "none"; ///< base functional in paired fixed-density labels
+    std::string deepks_pair_target = "none"; ///< target functional in paired fixed-density labels
     std::vector<int> deepks_band_range = {-1, 0}; ///< the range of bands to calculate bandgap
     int deepks_v_delta = 0;                       ///< for v_delta label. xuan added
+    bool deepks_grad = false;                    ///< output descriptor-gradient label intermediates for DeePKS training
     bool deepks_equiv = false;                    ///< whether to use equivariant version of DeePKS
     bool deepks_out_unittest = false;             ///< if set to true, prints intermediate quantities that shall
                                                   ///< be used for making unit test

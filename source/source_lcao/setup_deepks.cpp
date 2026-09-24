@@ -33,14 +33,15 @@ void Setup_DeePKS<TK>::build_overlap(const UnitCell& ucell,
     if (PARAM.globalv.deepks_setorb)
     {
         // allocate <phi(0)|alpha(R)>, phialpha is different every ion step, so it is allocated here
-        DeePKS_domain::allocate_phialpha(inp.cal_force, ucell, orb, gd, &pv, this->ld.phialpha);
+        const bool need_derivatives = inp.cal_force || inp.cal_stress;
+        DeePKS_domain::allocate_phialpha(need_derivatives, ucell, orb, gd, &pv, this->ld.phialpha);
 
         // build and save <phi(0)|alpha(R)> at beginning
-        DeePKS_domain::build_phialpha(inp.cal_force, ucell, orb, gd, &pv, overlap_orb_alpha, this->ld.phialpha);
+        DeePKS_domain::build_phialpha(need_derivatives, ucell, orb, gd, &pv, overlap_orb_alpha, this->ld.phialpha);
 
         if (inp.deepks_out_unittest)
         {
-            DeePKS_domain::check_phialpha(inp.cal_force, ucell, orb, gd, &pv, this->ld.phialpha, GlobalV::MY_RANK);
+            DeePKS_domain::check_phialpha(need_derivatives, ucell, orb, gd, &pv, this->ld.phialpha, GlobalV::MY_RANK);
         }
     }
 #endif
@@ -105,38 +106,21 @@ void write_forces(const ModuleBase::matrix& fcs,
                   const Input_para& inp)
 {
 #ifdef __MLALGO
-    // DeePKS force
-    if (inp.deepks_out_labels) // not parallelized yet
+    if (dpks_out_type == "pair")
     {
-        if (inp.deepks_out_base == "none" || (inp.deepks_out_base != "none" && dpks_out_type == "tot"))
+        return;
+    }
+    if (inp.deepks_out_labels)
+    {
+        const std::string file_ftot
+            = PARAM.globalv.global_out_dir + (inp.deepks_out_labels == 1 ? "deepks_ftot.npy" : "deepks_force.npy");
+        LCAO_deepks_io::save_matrix2npy(file_ftot, fcs, GlobalV::MY_RANK);
+        if (inp.deepks_out_labels == 1)
         {
-            const std::string file_ftot
-                = PARAM.globalv.global_out_dir + (inp.deepks_out_labels == 1 ? "deepks_ftot.npy" : "deepks_force.npy");
-            LCAO_deepks_io::save_matrix2npy(file_ftot, fcs, GlobalV::MY_RANK); // Hartree/Bohr, F_tot
-
-            if (inp.deepks_out_labels == 1)
-            {
-                // this base only considers subtracting the deepks_scf part
-                const std::string file_fbase = PARAM.globalv.global_out_dir + "deepks_fbase.npy";
-                if (inp.deepks_scf)
-                {
-                    LCAO_deepks_io::save_matrix2npy(file_fbase,
-                                                    fcs - fvnl_dalpha,
-                                                    GlobalV::MY_RANK); // Hartree/Bohr, F_base
-                }
-                else
-                {
-                    LCAO_deepks_io::save_matrix2npy(file_fbase, fcs, GlobalV::MY_RANK); // no scf, F_base=F_tot
-                }
-            }
-        }
-        if (inp.deepks_out_base != "none")
-        {
-            // output fcs as tot or base in another dir
-            // this base considers changing xc functional to base functional
-            const std::string file_f
-                = PARAM.globalv.global_deepks_label_elec_dir + (dpks_out_type == "tot" ? "ftot.npy" : "fbase.npy");
-            LCAO_deepks_io::save_matrix2npy(file_f, fcs, GlobalV::MY_RANK);
+            const std::string file_fbase = PARAM.globalv.global_out_dir + "deepks_fbase.npy";
+            LCAO_deepks_io::save_matrix2npy(file_fbase,
+                                          inp.deepks_scf ? fcs - fvnl_dalpha : fcs,
+                                          GlobalV::MY_RANK);
         }
     }
 #endif
@@ -149,53 +133,25 @@ void write_stress(const ModuleBase::matrix& scs,
                   const Input_para& inp)
 {
 #ifdef __MLALGO
+    if (dpks_out_type == "pair")
+    {
+        return;
+    }
     if (inp.deepks_out_labels == 1)
     {
         assert(omega > 0.0);
-
-        if (inp.deepks_out_base == "none" || (inp.deepks_out_base != "none" && dpks_out_type == "tot"))
-        {
-            const std::string file_stot = PARAM.globalv.global_out_dir + "deepks_stot.npy";
-            LCAO_deepks_io::save_matrix2npy(file_stot,
-                                            scs,
-                                            GlobalV::MY_RANK,
-                                            omega,
-                                            'U'); // change to energy unit Ry when printing, S_tot;
-
-            // this base only considers subtracting the deepks_scf part
-            const std::string file_sbase = PARAM.globalv.global_out_dir + "deepks_sbase.npy";
-            if (inp.deepks_scf)
-            {
-                LCAO_deepks_io::save_matrix2npy(file_sbase,
-                                                scs - svnl_dalpha,
-                                                GlobalV::MY_RANK,
-                                                omega,
-                                                'U'); // change to energy unit Ry when printing, S_base;
-            }
-            else
-            {
-                LCAO_deepks_io::save_matrix2npy(file_sbase, scs, GlobalV::MY_RANK, omega,
-                                                'U'); // sbase = stot
-            }
-        }
-        if (inp.deepks_out_base != "none")
-        {
-            // output scs as tot or base in another dir
-            // this base considers changing xc functional to base functional
-            const std::string file_s = PARAM.globalv.global_deepks_label_elec_dir
-                                       + (dpks_out_type == "tot" ? "stot.npy" : "sbase.npy");
-            LCAO_deepks_io::save_matrix2npy(file_s,
-                                            scs,
-                                            GlobalV::MY_RANK,
-                                            omega,
-                                            'U'); // change to energy unit Ry when printing, S_tot;
-        }
+        const std::string file_stot = PARAM.globalv.global_out_dir + "deepks_stot.npy";
+        const std::string file_sbase = PARAM.globalv.global_out_dir + "deepks_sbase.npy";
+        // The matrix writer converts internal Ry/Bohr^3 to Hartree virial.
+        LCAO_deepks_io::save_matrix2npy(file_stot, scs, GlobalV::MY_RANK, omega, 'U');
+        LCAO_deepks_io::save_matrix2npy(file_sbase,
+                                      inp.deepks_scf ? scs - svnl_dalpha : scs,
+                                      GlobalV::MY_RANK, omega, 'U');
     }
     else if (inp.deepks_out_labels == 2)
     {
         const std::string file_stot = PARAM.globalv.global_out_dir + "deepks_stress.npy";
-        LCAO_deepks_io::save_matrix2npy(file_stot, scs, GlobalV::MY_RANK, omega,
-                                        'F'); // flat mode
+        LCAO_deepks_io::save_matrix2npy(file_stot, scs, GlobalV::MY_RANK, omega, 'F');
     }
 #endif
 }

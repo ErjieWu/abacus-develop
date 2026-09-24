@@ -3,6 +3,7 @@
 #include "source_lcao/module_deepks/deepks_basic.h"
 #include "source_lcao/module_deepks/deepks_check.h"
 #include "source_lcao/module_deepks/deepks_fpre.h"
+#include "source_lcao/module_deepks/deepks_grad.h"
 
 #include <complex>
 
@@ -15,6 +16,10 @@ void test_deepks<T>::check_gvx(torch::Tensor& gdmx)
     DeePKS_domain::cal_gvx(ucell.nat, this->ld.deepks_param, gevdm, gdmx, gvx, 0);
     DeePKS_domain::check_tensor<double>(gvx, "gvx.dat", 0);
     this->assert_file_matches_reference("gvx.dat", "gvx_ref.dat");
+    torch::Tensor metric;
+    DeePKS_domain::cal_gvx_square(gvx, metric);
+    const auto force_operator = -gvx.reshape({ucell.nat * 3, -1});
+    EXPECT_TRUE(torch::allclose(metric, force_operator.t().mm(force_operator), 1e-12, 1e-14));
 }
 
 template void test_deepks<double>::check_gvx(torch::Tensor& gdmx);
